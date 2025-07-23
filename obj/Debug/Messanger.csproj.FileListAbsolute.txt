@@ -1,0 +1,7 @@
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\Messanger.exe.config
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\Messanger.exe
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\Messanger.pdb
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj.AssemblyReference.cache
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj.CoreCompileInputs.cache
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.pdb
