@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 
 namespace Messanger
 {
     internal class Program
     {
-        static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             Console.WriteLine("Вы клиент или сервер?");
             Console.WriteLine("\n1 - клиент\n2 - сервер\n");
@@ -19,13 +20,13 @@ namespace Messanger
                 switch (Console.ReadKey(true).Key)
                 {
                     case ConsoleKey.D1:
-                        NewClient.CreateClient();
-                        //isCorrectComand = false;
+                        await NewClient.CreateClient();
+                        isCorrectComand = false;
                         break;
 
                     case ConsoleKey.D2:
-                        NewServer.CreateServer();
-                        //isCorrectComand = false;
+                        await NewServer.CreateServer();
+                        isCorrectComand = false;
                         break;
                 }
             }

@@ -6,3 +6,12 @@ C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.pdb
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe.config
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Buffers.dll
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Memory.dll
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Numerics.Vectors.dll
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Buffers.xml
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Memory.xml
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Numerics.Vectors.xml
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj.Up2Date
