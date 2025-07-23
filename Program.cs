@@ -16,22 +16,19 @@ namespace Messanger
 
             while (isCorrectComand)
             {
-                switch (Console.ReadKey().Key)
+                switch (Console.ReadKey(true).Key)
                 {
                     case ConsoleKey.D1:
-                        
-                        isCorrectComand = true;
+                        NewClient.CreateClient();
+                        //isCorrectComand = false;
                         break;
 
                     case ConsoleKey.D2:
-                        NewServer.GetIP();
-
-                        isCorrectComand = true;
+                        NewServer.CreateServer();
+                        //isCorrectComand = false;
                         break;
                 }
             }
-
-
         }
     }
 }
