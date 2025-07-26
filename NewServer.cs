@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -11,11 +12,12 @@ namespace Messanger
 {
     public class NewServer
     {
-        private static List<TcpClient> clients = new List<TcpClient>(); // список всех клиентов
+        private static Dictionary<TcpClient, string> clients = new Dictionary<TcpClient, string>(); // список всех клиентов
+
 
         public static async Task CreateServer()
         {
-            bool isIncorrectPort = true; // переменная для корректного вода порта
+            //bool isIncorrectPort = true; // переменная для корректного вода порта
             int port = 6969; // инициализация порта с дефолтным значением 6969
             //while (isIncorrectPort)
             //{
@@ -49,9 +51,12 @@ namespace Messanger
 
                     var client = await server.AcceptTcpClientAsync();
 
-                    clients.Add(client);
+                    var streamReader = new StreamReader(client.GetStream());
+                    string clientName = await streamReader.ReadLineAsync();
 
-                    Task.Run(async () => await ListingClientAsync(client));
+                    clients.Add(client, clientName);
+
+                    Task.Run(async () => await ProcessClientAsync(client, clientName));
 
                 }
             }
@@ -61,48 +66,41 @@ namespace Messanger
             }
         }
 
-        private static async Task ListingClientAsync(TcpClient client)
+        private static async Task ProcessClientAsync(TcpClient client, string clientName)
         {
+            Console.WriteLine(clientName + " подключился.");
             var stream = client.GetStream();
 
-            var response = new List<byte>();
-            int byteRead = '\n';
+            using var streamReader = new StreamReader(stream);
+            using var streamWriter = new StreamWriter(stream);
 
             while(true)
             {
-                response.Clear();
+                string response = await streamReader.ReadLineAsync();
 
-                while ((byteRead = stream.ReadByte()) != '\n')
-                {
-                    response.Add((byte)byteRead);
-                }
-
-                string fullResponse = Encoding.UTF8.GetString(response.ToArray());
-
-                if (fullResponse == "END") break;
-
-                string author = Convert.ToString(client.Client.RemoteEndPoint);
-
-                Console.WriteLine($"Клиент {client.Client.RemoteEndPoint} написал: {fullResponse}");
-
-                await SendingClientsAsync(clients.ToArray(), fullResponse, author);
-
+                Console.WriteLine($"Клиент {clientName} написал: {response}");
+                await SendAll(client, clientName, response);
             }
-
-            client.Close();
         }
 
-        private static async Task SendingClientsAsync(TcpClient[] clients, string mes, string author)
+        public static async Task SendAll(TcpClient client, string clientName, string message)
         {
-            foreach (var client in clients)
+            foreach (var item in clients)
             {
-                var clientStream = client.GetStream();
-
-                string mes1 = $"{author}: {mes}" + '\n';
-
-                await clientStream.WriteAsync(Encoding.UTF8.GetBytes(mes1), 0, mes1.Length);
-                Console.WriteLine($" > Клиенту {client.Client.RemoteEndPoint} отправленно сообщение от {author}");
+                if (item.Key != client)
+                {
+                    var stream = new StreamWriter(item.Key.GetStream());
+                    Console.WriteLine("otpravlay " + item.Value);
+                    await WriteMessage(stream, clientName + " : " + message);
+                    Console.WriteLine("otpraviy");
+                }
             }
+        }
+
+        public static async Task WriteMessage(StreamWriter stream, string mes)
+        {
+            await stream.WriteAsync(mes);
+            await stream.FlushAsync();
         }
     }
 }

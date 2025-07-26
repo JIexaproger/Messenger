@@ -5,7 +5,6 @@ C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj.CoreCompileInputs.cache
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.pdb
-C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe.config
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Buffers.dll
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Memory.dll
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Numerics.Vectors.dll
@@ -15,3 +14,7 @@ C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Memory.xm
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Numerics.Vectors.xml
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
 C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.csproj.Up2Date
+C:\Users\IIIuIIIka\Documents\CSharpProjects\dist\Messanger.exe.config
+C:\Users\IIIuIIIka\Documents\CSharpProjects\dist\Messanger.exe
+C:\Users\IIIuIIIka\Documents\CSharpProjects\dist\Messanger.pdb
+C:\Users\IIIuIIIka\Documents\CSharpProjects\Messanger\obj\Debug\Messanger.exe.config
