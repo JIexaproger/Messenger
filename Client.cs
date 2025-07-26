@@ -12,6 +12,7 @@ namespace Messanger
     public static class Client
     {
         private static bool _isRunning = true;
+        private static string inputBuffer;
 
         public static async Task NewClient(string ip, int port)
         {
@@ -71,8 +72,7 @@ namespace Messanger
                 while (_isRunning)
                 {
                     Console.Write("> ");
-
-                    var messageList = new List<char>();
+                    inputBuffer = "";
                     while (true)
                     {
                         ConsoleKeyInfo key = Console.ReadKey(true);
@@ -80,22 +80,25 @@ namespace Messanger
 
                         if (keyChar != ' ')
                         {
-                            messageList.Add(keyChar);
+                            inputBuffer += keyChar;
                             Console.Write(keyChar);
                         }
 
                         if (key.Key == ConsoleKey.Spacebar)
                         {
-                            messageList.Add(' ');
+                            inputBuffer += " ";
                             Console.Write(" ");
-                            //Console.WriteLine("spacebar");
                         }
                         else
-                        if (key.Key == ConsoleKey.Backspace && messageList.Count > 0)
+                        if (key.Key == ConsoleKey.Backspace && inputBuffer.Length > 1)
                         {
-                            messageList.RemoveAt(messageList.Count - 1);
-                            Console.Write("\b \b");
-                            //Console.WriteLine("back");
+                            inputBuffer = inputBuffer.Substring(0, inputBuffer.Length - 2);
+                            //Console.WriteLine();
+                            //Console.WriteLine(inputBuffer);
+                            //Console.WriteLine();
+                            Console.Write("\r" + new string(' ', Console.BufferWidth) + "\r");
+
+                            Console.Write("> " + inputBuffer);
                         }
                         else
                         if (key.Key == ConsoleKey.Enter)
@@ -106,7 +109,7 @@ namespace Messanger
                         }
                     }
 
-                    string message = new string(messageList.ToArray());
+                    string message = new string(inputBuffer.ToArray());
 
                     if (string.IsNullOrWhiteSpace(message) || message.Replace(" ", "") == null)
                     {
@@ -115,19 +118,8 @@ namespace Messanger
                         continue;
                     }
 
-                    //Console.SetCursorPosition(0, Console.CursorTop);
-                    //Console.Write(new string(' ', Console.BufferWidth));
-                    //Console.SetCursorPosition(0, Console.CursorTop);
-
-                    await writer.WriteLineAsync(Protocol.BuildProtocolString(ServerCommands.SendMessage, clientName, message));
-
-                    //await writer.WriteLineAsync(message);
-
-                    //if (message == "/q")
-                    //{
-                    //    _isRunning = false;
-                    //    break;
-                    //}
+                    await writer.WriteLineAsync(Protocol.BuildProtocolString(
+                        ServerCommands.SendMessage, clientName, message));
                 }
 
             }
@@ -135,7 +127,6 @@ namespace Messanger
             {
                 Console.WriteLine($"Ошибка: {ex.Message}");
             }
-
 
         }
 
@@ -150,7 +141,40 @@ namespace Messanger
 
                 DateTime time = DateTime.Now;
 
-                SaveEnteredText(time, response);
+                int cursorX = Console.CursorLeft;
+                int cursorY = Console.CursorTop;
+
+                Console.SetCursorPosition(0, Console.CursorTop);
+                Console.Write(new string(' ', Console.WindowWidth));
+                Console.SetCursorPosition(0, Console.CursorTop);
+
+                var tColor = Console.ForegroundColor;
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write($"[{time.Hour.ToString("00")}:{time.Minute.ToString("00")}] ");
+
+                Console.ForegroundColor = tColor;
+
+                var protocol = new Protocol(response);
+
+                switch (protocol.Command)
+                {
+                    case ServerCommands.UserJoin:
+                        Console.WriteLine(protocol.Name + " присоеденился к чату");
+                        break;
+
+                    case ServerCommands.UserLeave:
+                        Console.WriteLine(protocol.Name + " покинул чат");
+                        break;
+
+                    case ServerCommands.SendMessage:
+                        Console.WriteLine($"<{protocol.Name}>: {protocol.Message}");
+                        break;
+                }
+
+                Console.Write("> " + new string(inputBuffer.ToArray()));
+
+                Console.SetCursorPosition(cursorX, cursorY + 1);
             }
         }
 
