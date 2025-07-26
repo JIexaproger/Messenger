@@ -10,10 +10,9 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["messenger2/messenger2.csproj", "messenger2/"]
-RUN dotnet restore "./messenger2/messenger2.csproj"
+COPY ["messenger2.csproj", "."]
+RUN dotnet restore "./messenger2.csproj"
 COPY . .
-WORKDIR "/src/messenger2"
 RUN dotnet build "./messenger2.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
@@ -25,4 +24,5 @@ RUN dotnet publish "./messenger2.csproj" -c $BUILD_CONFIGURATION -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+EXPOSE 5959
 ENTRYPOINT ["dotnet", "messenger2.dll"]
