@@ -72,12 +72,12 @@ namespace messanger1
                         case ConsoleKey.D2:
                             try
                             {
-                                //Console.Write("Введите IP сервера: ");
-                                //string ip = Console.ReadLine();
-                                //Console.Write("Введите порт сервера: ");
-                                //int port = Convert.ToInt32(Console.ReadLine());
-                                //await Client.NewClient(ip, port);
-                                await Client.NewClient("192.168.0.12", 5959);
+                            Console.Write("Введите IP сервера: ");
+                            ip = Console.ReadLine();
+                            Console.Write("Введите порт сервера: ");
+                            port = Convert.ToInt32(Console.ReadLine());
+                            await Client.NewClient(ip, port);
+                            //await Client.NewClient("192.168.0.12", 5959);
                                 break;
                             }
                             catch (Exception ex)
