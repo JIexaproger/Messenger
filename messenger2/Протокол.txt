@@ -1,0 +1,40 @@
+<message>:string,
+<name>:string,
+<command>:enum,
+<serverCommand>:string,
+<leaveChat>:name
+<parts>:int, string, ConsoleColor, string, color ... string, color,
+<status>:bool
+
+<name>:string
+
+
+<command>:ServerCommand.UserLeave;<message>:ляля25959;<name>:хс
+<command><name><message>
+<command><status><name><message>
+
+<command>:VerifiedLogin;<status>:true
+
+BaseProtocol {
+	type: Enum
+}
+
+UserActions(BaseProtocol) {
+	name: string
+}
+
+UserMessage(userAction) {
+	type: Enum.msg
+}
+UserLeave(){
+}
+
+
+SystemAction(BaseProtocol){}
+
+UserRenamed(SystemAction){
+	success: bool
+	error: string | null
+}
+
+
