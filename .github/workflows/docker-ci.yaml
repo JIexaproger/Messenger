@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build-and-push:
@@ -12,19 +15,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install NuGet
-        uses: nuget/setup-nuget@v2
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # - name: Restore dependencies
+      #   run: dotnet restore ./messenger2/messenger2.csproj
+
+      # - name: Build project
+      #   run: dotnet build ./messenger2/messenger2.csproj --configuration Release --no-restore
+
+      # - name: Test project
+      #   run: dotnet test ./messenger2/messenger2.csproj --no-build --configuration Release || echo "No tests found, continuing..."
 
       - name: Log in to Docker Hub
+        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
+        # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
-          context: ./messanger2
-          file: ./messanger2/Dockerfile
+          context: ./messenger2
+          file: ./messenger2/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/messanger:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/messenger:latest
