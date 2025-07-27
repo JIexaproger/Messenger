@@ -61,8 +61,8 @@ namespace messanger1
             using (var writer = new StreamWriter(stream) { AutoFlush = true })
             {
                 bool emptyName = false;
-                int maxNameLenght = 16;
-                int minNameLength = 3;
+                int maxNameLenght = 255;
+                int minNameLength = 1;
                 string clientName;
                 while (true)
                 {

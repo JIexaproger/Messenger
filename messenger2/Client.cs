@@ -96,7 +96,9 @@ namespace messanger1
                             //Console.WriteLine();
                             //Console.WriteLine(inputBuffer);
                             //Console.WriteLine();
-                            Console.Write("\r" + new string(' ', Console.BufferWidth) + "\r");
+                            Console.SetCursorPosition(0, Console.CursorTop);
+                            Console.Write(new string(' ', 20));
+                            Console.SetCursorPosition(0, Console.CursorTop);
 
                             Console.Write("> " + inputBuffer);
                         }
@@ -104,16 +106,17 @@ namespace messanger1
                         if (key.Key == ConsoleKey.Enter)
                         {
                             Console.SetCursorPosition(0, Console.CursorTop);
-                            Console.Write("\r" + new string(' ', Console.BufferWidth) + "\r");
+                            Console.Write(new string(' ', 20));
+                            Console.SetCursorPosition(0, Console.CursorTop);
                             break;
                         }
                     }
 
                     string message = new string(inputBuffer.ToArray());
 
-                    if (string.IsNullOrWhiteSpace(message) || message.Replace(" ", "") == null)
+                    if (string.IsNullOrWhiteSpace(message) || message.Replace(" ", "") == "")
                     {
-                        Console.Write(new string(' ', Console.WindowWidth));
+                        Console.Write(new string(' ', 20));
                         Console.SetCursorPosition(0, Console.CursorTop);
                         continue;
                     }
@@ -145,7 +148,7 @@ namespace messanger1
                 int cursorY = Console.CursorTop;
 
                 Console.SetCursorPosition(0, Console.CursorTop);
-                Console.Write(new string(' ', Console.WindowWidth));
+                Console.Write(new string(' ', 20));
                 Console.SetCursorPosition(0, Console.CursorTop);
 
                 var tColor = Console.ForegroundColor;
@@ -168,13 +171,13 @@ namespace messanger1
                         break;
 
                     case ServerCommands.SendMessage:
-                        Console.WriteLine($"<{protocol.Name}>: {protocol.Message}");
+                        Console.Write($"<{protocol.Name}>: {protocol.Message}");
                         break;
                 }
 
                 Console.Write("> " + new string(inputBuffer.ToArray()));
 
-                Console.SetCursorPosition(cursorX, cursorY + 1);
+                Console.SetCursorPosition(cursorX, cursorY + 2);
             }
         }
 
