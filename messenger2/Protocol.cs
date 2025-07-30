@@ -18,7 +18,7 @@ namespace messanger2
         UserMention, // name
         SendMessage, // message, mentioned
         SendCommand, // message, 
-        ServerOnline // name, message
+        ServerOnline // strings
     }
 
     public enum Error
@@ -33,6 +33,7 @@ namespace messanger2
 
     class Protocol
     {
+
         /// <summary>
         /// Текст
         /// </summary>
@@ -53,12 +54,10 @@ namespace messanger2
         /// </summary>
         public Error Error { get; }
 
-        public List<string>? Strings { get; }
-
         /// <summary>
-        /// Разбиение сообщения на части для цветного форматирования
+        /// Лист строк
         /// </summary>
-        //public Dictionary<string, ConsoleColor> MessageParts { get; }
+        public string[]? Strings { get; }
 
         /// <summary>
         /// Серверное поле в котором отправляется статус принятия сообщения
@@ -68,117 +67,27 @@ namespace messanger2
         /// <summary>
         /// Есть ли в сообщении упоминание
         /// </summary>
-        public bool? Mentioned { get; }
+        public bool Mentioned { get; } = false;
 
 
 
-        public Protocol(string raw)
-        {
-            string[] protokolParts = raw.Split(';');
 
-            foreach (var part in protokolParts)
-            {
-                if (part.StartsWith("<command>:"))
-                {
-                    if (Enum.TryParse(part.Substring(10), out ServerCommand command))
-                    {
-                        Command = command;
-                        continue;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                if (part.StartsWith("<error>:"))
-                {
-                    if (Enum.TryParse(part.Substring(10), out Error error))
-                    {
-                        Error = error;
-                        continue;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                if (part.StartsWith("<message>:"))
-                {
-                    if (!string.IsNullOrEmpty(part.Substring(10)))
-                    {
-                        Message = part.Substring(10);
-                    }
-                    continue;
-                }
-                if (part.StartsWith("<name>:"))
-                {
-                    if (!string.IsNullOrEmpty(part.Substring(10)))
-                    {
-                        Name = part.Substring(7);
-                    }
-                    continue;
-                }
-                if (part.StartsWith("<status>:"))
-                {
-                    if (part.Substring(9).ToLower() == "true")
-                    {
-                        Status = true;
-                    } 
-                    else Status = false;
-
-                    continue;
-                }
-                if (part.StartsWith("<mentioned>:"))
-                {
-                    if (part.Substring(12).ToLower() == "true")
-                    {
-                        Mentioned = true;
-                    } 
-                    else Mentioned = false;
-
-                    continue;
-                }
-            }
-        }
-
-        public static string BuildProtocolString(
-            ServerCommand serverCommand,
+        public Protocol(
+            ServerCommand command,
             string? name = null,
             string? message = null,
-            string[]? strings = null,
             Error error = 0,
+            string[]? strings = null,
             bool? status = null,
-            bool? mentioned = null)
+            bool mentioned = false)
         {
-            var protokolParts = new List<string>();
-
-            protokolParts.Add($"<command>:{serverCommand}");
-
-            if (name != null) protokolParts.Add($"<name>:{name}");
-            if (message != null) protokolParts.Add($"<message>:{message}");
-            if (strings != null) protokolParts.Add($"<strings>:{message}");
-            if (error != 0) protokolParts.Add($"<error>:{error}");
-            if (status != null) protokolParts.Add($"<status>:{status}");
-            if (mentioned != null) protokolParts.Add($"<mentioned>:{mentioned}");
-
-            return string.Join(";", protokolParts.ToArray());
+            Command = command;
+            Message = message;
+            Name = name;
+            Error = error;
+            Strings = strings;
+            Status = status;
+            Mentioned = mentioned;
         }
-
-
-        public static string BuildProtocolString(Protocol protocol)
-        {
-            var protokolParts = new List<string>();
-
-            protokolParts.Add($"<command>:{protocol.Command}");
-
-            if (protocol.Name != null) protokolParts.Add($"<name>:{protocol.Name}");
-            if (protocol.Message != null) protokolParts.Add($"<message>:{protocol.Message}");
-            if (protocol.Error != 0) protokolParts.Add($"<error>:{protocol.Error}");
-            if (protocol.Status != null) protokolParts.Add($"<status>:{protocol.Message}");
-            if (protocol.Mentioned != null) protokolParts.Add($"<mentioned>:{protocol.Mentioned}");
-
-            return string.Join(";", protokolParts.ToArray());
-        }
-
     }
 }

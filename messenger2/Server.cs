@@ -8,29 +8,39 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace messanger2
 {
     public class Server
     {
-        private static object locker = new();
+        // статичный локер для исключения гонки за резервирование имени
+        private static object registrationLocker = new();
+        private static object consoleOutputLocker = new();
 
         private readonly IPAddress _ip;
         private readonly int _port;
-        private readonly bool _isRunning;
 
+        // запущен ли сервер
+        private bool _isRunning;
+
+        // ограничения на длинну имён
         public int MaxNameLength = 512;
         public int MinNameLength = 1;
 
+        // словарь имени клиентов/конфиг клиента
         private Dictionary<string, ClientConfig> clients;
 
 
+        private bool _debug;
 
-        public Server(string ip, int port)
+        // конструкторы
+        public Server(string ip, int port, bool debugMode)
         {
             _ip = IPAddress.Parse(ip);
             _port = port;
+            _debug = debugMode;
             clients = new Dictionary<string, ClientConfig>();
         }
         public Server(IPAddress ip, int port)
@@ -41,7 +51,7 @@ namespace messanger2
         }
 
 
-
+        // метод запуска сервера
         public void CreateServer()
         {
             TcpListener server = new TcpListener(_ip, _port);
@@ -51,6 +61,8 @@ namespace messanger2
             _ = AcceptClientsAsync(server);
         }
 
+
+        // асинхронный метод запуска приёма клиентов
         private async Task AcceptClientsAsync(TcpListener server)
         {
             while (_isRunning)
@@ -60,18 +72,24 @@ namespace messanger2
             }
         }
 
+
+        // асинхронный метод авторизации клиента
         private async Task<string> ClientAuthorizationAsync(StreamReader reader, StreamWriter writer)
         {
+            // инициализация переменной имени и стандартное значение
             string userName = "UnregisteredUser";
             while (_isRunning)
             {
+                // чтение сообщения клиента
                 string? userInput = await reader.ReadLineAsync();
                 if (string.IsNullOrEmpty(userInput)) continue;
 
                 userName = userInput;
 
                 bool nameNotAvailable = false;
-                lock (locker)
+
+                // исключение гонки за одно имя
+                lock (registrationLocker)
                 {
                     foreach (var client in clients)
                     {
@@ -83,28 +101,40 @@ namespace messanger2
                     }
                 }
 
+                // обработка ошибки: имя уже занято
                 if (nameNotAvailable)
                 {
-                    await writer.WriteLineAsync(Protocol.BuildProtocolString(
-                        ServerCommand.VerifiedLogin, status: false, error: Error.NameNotAvailable));
+                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                        ServerCommand.VerifiedLogin,
+                        status: false,
+                        error: Error.NameNotAvailable)));
                     continue;
                 }
+                // обработка ошибки: имя слишком длинное
                 if (userName.Length > MaxNameLength)
                 {
-                    await writer.WriteLineAsync(Protocol.BuildProtocolString(
-                        ServerCommand.VerifiedLogin, status: false, error: Error.NameTooLong));
+                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                        ServerCommand.VerifiedLogin,
+                        status: false,
+                        error: Error.NameTooLong)));
                     continue;
                 }
+                // обработка ошибки: имя слишком короткое
                 if (userName.Length < MinNameLength)
                 {
-                    await writer.WriteLineAsync(Protocol.BuildProtocolString
-                        (ServerCommand.VerifiedLogin, status: false, error: Error.NameTooLong));
+                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                        ServerCommand.VerifiedLogin,
+                        status: false,
+                        error: Error.NameTooShort)));
                     continue;
                 }
+                // обработка ошибки: пустое имя
                 if (string.IsNullOrEmpty(userName))
                 {
-                    await writer.WriteLineAsync(Protocol.BuildProtocolString(
-                        ServerCommand.VerifiedLogin, status: false, error: Error.NameIsEmpty));
+                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                        ServerCommand.VerifiedLogin,
+                        status: false,
+                        error: Error.NameIsEmpty)));
                     continue;
                 }
 
@@ -113,262 +143,196 @@ namespace messanger2
             return userName;
         }
 
+
+        // асинхронный метод обработки клиента
         private async Task HandleClientAsync(TcpClient client)
         {
+            // получение потоков клиента с конструкцией using, которая освободит память после выполнения блока кода 
             using (client)
             using (var stream = client.GetStream())
             using (var reader = new StreamReader(stream))
             using (var writer = new StreamWriter(stream) { AutoFlush = true })
             {
+                // получение имени клиента через метод авторизации
                 string clientName = await ClientAuthorizationAsync(reader, writer);
 
+                // добовление имени в словарь
                 clients.Add(clientName, new ClientConfig(client, reader, writer));
+
 
                 while (_isRunning)
                 {
+                    // чтение сообщения клиента
                     string? response = await reader.ReadLineAsync();
                     if (string.IsNullOrEmpty(response)) continue;
 
-                    Protocol responseProtocol = new Protocol(response);
-
-                    if (responseProtocol.Command == ServerCommand.SendMessage)
+                    try
                     {
-                        if (string.IsNullOrEmpty(responseProtocol.Message)) continue;
+                        // расшифорвка json сообщения клиента
+                        Protocol? responseProtocol = JsonSerializer.Deserialize<Protocol>(response);
+                        if (responseProtocol is null) continue;
 
-                        await writer.WriteLineAsync(response);
-                        continue;
-                    }
-                    else
-                    if (responseProtocol.Command == ServerCommand.SendCommand)
-                    {
-                        if (string.IsNullOrEmpty(responseProtocol.Message)) continue;
 
-                        string[] args = responseProtocol.Message.Split(' ');
-
-                        if (args[0] == "online")
+                        // если клиент отправил команду об отправке сообщения
+                        if (responseProtocol.Command == ServerCommand.SendMessage)
                         {
-                            await writer.WriteLineAsync(Protocol.BuildProtocolString());
+                            if (string.IsNullOrEmpty(responseProtocol.Message)) continue;
+
+                            var mes = JsonSerializer.Serialize(new Protocol(
+                                ServerCommand.SendMessage,
+                                message: responseProtocol.Message));
+
+                            await BoardcastAsync(mes);
+
+                            lock (consoleOutputLocker) { Console.WriteLine(mes); }
+
+                            continue;
+                        }
+
+
+                        // если клиент отправил команду об отправке команды
+                        if (responseProtocol.Command == ServerCommand.SendCommand)
+                        {
+                            if (string.IsNullOrEmpty(responseProtocol.Message)) continue;
+
+                            string[] args = responseProtocol.Message.Split(' ');
+
+                            if (args[0] == "online")
+                            {
+                                var mes = JsonSerializer.Serialize(new Protocol(
+                                    ServerCommand.ServerOnline,
+                                    strings: clients.Keys.ToArray()));
+
+                                await writer.WriteLineAsync(mes);
+
+                                lock (consoleOutputLocker) { Console.WriteLine(mes); }
+
+                                continue;
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        if (_debug) { Console.WriteLine($"Неправильный JSON формат от \"{clientName}\": {response}\n{ex}"); }
+                    }
+
 
                 }
 
             }
         }
 
+
+        // обработчик ввода в консоль сервера
         private async Task HandleServerConsoleAsync()
         {
             while (_isRunning)
             {
-                string? input = Console.ReadLine();
-                if (string.IsNullOrEmpty(input)) continue;
-
-                string[] inputParts = input.Split(' ');
-
-                if (inputParts[0] == "send")
+                try
                 {
-                    Console.WriteLine(inputParts[1]);
+                    // ввод
+                    string? input = Console.ReadLine();
+                    if (string.IsNullOrEmpty(input)) continue;
+
+                    // разделение пробелом для получения аргументов
+                    string[] inputParts = input.Split(' ');
+
+
+                    // если команда: send
+                    if (inputParts[0] == "send")
+                    {
+                        // переменные для отправки
+                        string name = "CONSOLE"; // отправитель
+                        string? recipient = null; // получатель
+                        string message = inputParts[1]; // соодержание сообщения (по умолчанию 1 аргумент)
+
+                        // аргументы
+                        for (int i = 2; i < inputParts.Length; i++)
+                        {
+                            // аргумент для указания имени отправителя
+                            if (inputParts[i] == "--to" || inputParts[i] == "-t")
+                            {
+                                recipient = inputParts[++i];
+                                continue;
+                            }
+                            else
+                            // аргумент для указания имени получателя
+                            if (inputParts[i] == "--from" || inputParts[i] == "-f")
+                            {
+                                name = inputParts[++i];
+                                continue;
+                            }
+
+                        }
+
+                        // если получатели не указаны, то отправляем всем
+                        if (recipient == null)
+                        {
+                            await BoardcastAsync(JsonSerializer.Serialize(new Protocol(
+                                ServerCommand.SendMessage,
+                                message,
+                                name)));
+                        }
+                        else // если указаны то только им
+                        {
+                            await BoardcastAsync(JsonSerializer.Serialize(new Protocol(
+                                ServerCommand.SendMessage,
+                                message,
+                                name)), recipient);
+                        }
+                    }
+                    // если команда: online
+                    if (inputParts[0] == "online")
+                    {
+                        lock (consoleOutputLocker)
+                        {
+                            Console.WriteLine("== Текущий онлайн: ==");
+                            Console.ForegroundColor = ConsoleColor.Blue;
+                            foreach (var onlineUser in clients.Keys.ToArray())
+                            {
+                                Console.WriteLine(onlineUser);
+                            }
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    continue;
+                }
+
             }
 
         }
 
-        private async Task BoardcastAsync(Protocol protocol)
+
+        // отправка сообщений участникам чата:
+        // отправка всем участникам
+        private async Task BoardcastAsync(string json)
         {
+            if (_debug) lock (consoleOutputLocker) { Console.WriteLine($"Сообщение всем: json"); }
+
             foreach (var client in clients)
             {
-                await client.Value.GetStreamWriter().WriteLineAsync(Protocol.BuildProtocolString());
+                await client.Value.GetStreamWriter().WriteLineAsync(json);
             }
         }
 
+        // отправка всем, кроме
+        private async Task BoardcastAsync(string json, string exceptClientName)
+        {
+            if (_debug) lock (consoleOutputLocker) { Console.WriteLine($"Сообщение {exceptClientName}: {json}"); }
 
-        //public static async Task CreateServer1(string ip = "0.0.0.0", int port = 5959)
-        //{
-        //    TcpListener server = new TcpListener(IPAddress.Parse(ip), port);
-        //    server.Start();
-        //    Console.WriteLine($"Сервер запущен на порту {port} ({server.LocalEndpoint})");
+            foreach (var client in clients)
+            {
+                if (client.Key == exceptClientName) continue;
 
-        //    try
-        //    {
-        //        _ = AcceptClientsAsync1(server);
+                await client.Value.GetStreamWriter().WriteLineAsync(json);
+            }
+        }
 
-        //        string consoleInput;
-        //        while (true)
-        //        {
-        //            consoleInput = Console.ReadLine();
+        //private async Task BoardcastAsync(string json, string[] recipientNames)
 
-        //            if (consoleInput == "Close")
-        //            {
-        //                break;
-        //            }
-        //            else await BroadcastAsync(ServerCommand.SendMessage, "CONSOLE", consoleInput);
-        //        }
-        //    }
-        //    finally
-        //    {
-        //        server.Stop();
-        //    }
-        //}
-
-        //private static async Task AcceptClientsAsync1(TcpListener server)
-        //{
-        //    while (true)
-        //    {
-        //        var client = await server.AcceptTcpClientAsync();
-        //        _ = HandleClientAsync(client); // Не ждём завершения задачи    
-        //    }
-        //}
-
-        //private static async Task HandleClientAsync(TcpClient client)
-        //{
-        //    using (client)
-        //    using (var stream = client.GetStream())
-        //    using (var reader = new StreamReader(stream))
-        //    using (var writer = new StreamWriter(stream) { AutoFlush = true })
-        //    {
-        //        //bool emptyName = false;
-        //        string clientName;
-        //        while (true)
-        //        {
-        //            while (true)
-        //            {
-        //                clientName = await reader.ReadLineAsync();
-
-        //                var protocol = new Protocol(clientName);
-
-        //                if (protocol.Command == ServerCommand.UserLogin)
-        //                    clientName = protocol.Name;
-        //                    break;
-        //            }
-
-
-        //            if (clientName == "исключение")
-        //            {
-        //                Console.WriteLine("isklu");
-        //                if (maxNameLenght >= 96)
-        //                {
-        //                    await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                        ServerCommand.VerifiedLogin, false, message: "Не наглей..."));
-        //                    continue;
-        //                }
-        //                else await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                       ServerCommand.VerifiedLogin, false, message: "Исключение принято"));
-        //                maxNameLenght += 8;
-        //                minNameLength = 0;
-        //                emptyName = false;
-        //                continue;
-        //            }
-        //            else if (clientName.Replace(" ", "").Length >= maxNameLenght || clientName.Length >= maxNameLenght)
-        //            {
-        //                await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                        ServerCommand.VerifiedLogin, false, message: $"Ваше имя не должно превышать {maxNameLenght} символов!"));
-        //                continue;
-        //            }
-        //            else if (clientName.Replace(" ", "").Length < minNameLength)
-        //            {
-        //                await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                        ServerCommand.VerifiedLogin, false, message: $"В вашем имени должно быть больше {minNameLength - 1} символов!"));
-        //                continue;
-        //            }
-        //            else if (clientName.Replace(" ", "").Length < clientName.Length / 2 && emptyName)
-        //            {
-        //                await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                        ServerCommand.VerifiedLogin, false, message: "Ваше имя не должно быть пустым!"));
-        //                continue;
-        //            }
-        //            else
-        //            {
-        //                Console.WriteLine("samoe to!");
-        //                clients.TryAdd(client, writer);
-        //                await writer.WriteLineAsync(Protocol.BuildProtocolString(
-        //                        ServerCommand.VerifiedLogin, true));
-        //                break;
-        //            }
-        //        }
-
-
-        //        var tColor = Console.ForegroundColor;
-
-        //        DateTime now = DateTime.Now;
-
-        //        Console.ForegroundColor = ConsoleColor.Green;
-        //        Console.Write($"[{now.Hour.ToString("00")}:{now.Minute.ToString("00")}:{now.Second.ToString("00")}] ");
-        //        Console.ForegroundColor = ConsoleColor.Cyan;
-        //        Console.WriteLine($"{clientName} подключился");
-
-        //        Console.ForegroundColor = tColor;
-
-        //        await BroadcastAsync(ServerCommand.UserJoin, clientName, null); // сообщение всем
-
-        //        try
-        //        {
-        //            while (client.Connected)
-        //            {
-        //                var answer = await reader.ReadLineAsync();
-        //                var protocol = new Protocol(answer);
-        //                Console.WriteLine(answer);
-        //                if (string.IsNullOrEmpty(protocol.Message)) continue;
-
-
-        //                DateTime time = DateTime.Now;
-
-        //                //if (message == "/q")
-        //                //{
-        //                //    tColor = Console.ForegroundColor;
-
-        //                //    Console.ForegroundColor = ConsoleColor.Green;
-        //                //    Console.Write($"[{time.Hour.ToString("00")}:{time.Minute.ToString("00")}:{time.Second.ToString("00")}] ");
-
-        //                //    Console.ForegroundColor = ConsoleColor.Red;
-        //                //    Console.Write("[ COMMAND ] ");
-
-        //                //    Console.ForegroundColor = ConsoleColor.DarkYellow;
-        //                //    Console.WriteLine($"{clientName} : {message}");
-
-        //                //    Console.ForegroundColor = tColor;
-        //                //    break;
-        //                //}
-
-        //                Console.ForegroundColor = ConsoleColor.Green;
-        //                Console.Write($"[{time.Hour.ToString("00")}:{time.Minute.ToString("00")}:{time.Second.ToString("00")}] ");
-
-        //                Console.ForegroundColor = tColor;
-        //                Console.Write($"<{clientName}>: {protocol.Message}\n");
-
-        //                await BroadcastAsync(ServerCommand.SendMessage, clientName, protocol.Message);
-        //            }
-        //        }
-        //        finally
-        //        {
-        //            clients.TryRemove(client, out _);
-        //            Console.ForegroundColor = ConsoleColor.Green;
-        //            Console.Write($"[{now.Hour.ToString("00")}:{now.Minute.ToString("00")}:{now.Second.ToString("00")}] ");
-        //            Console.ForegroundColor = ConsoleColor.Red;
-        //            Console.WriteLine($"{clientName} отключился");
-
-        //            Console.ForegroundColor = tColor;
-
-        //            await BroadcastAsync(ServerCommand.UserLeave, clientName, null); // сообщение всем
-        //        }
-        //    }
-        //}
-
-        //private static async Task BroadcastAsync(ServerCommand serverCommand, string name, string message)
-        //{
-        //    var sendProtocol = Protocol.BuildProtocolString(serverCommand, name, message);
-
-        //    foreach (var client in clients)
-        //    {
-        //        //if (client.Key != sender && client.Key.Connected)
-        //        if (client.Key.Connected)
-        //        {
-        //            try
-        //            {
-        //                await client.Value.WriteLineAsync(sendProtocol);
-        //            }
-        //            catch { /* Игнорируем ошибки отправки */ }
-        //        }
-        //    }
-        //}
     }
 }
