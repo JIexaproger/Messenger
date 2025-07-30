@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 
 
-namespace messanger1
+namespace messanger2
 {
     internal class Program
     {
