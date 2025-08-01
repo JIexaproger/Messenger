@@ -98,6 +98,7 @@ namespace messanger2
             Mentioned = mentioned;
         }
 
+        [JsonConstructor]
         public Protocol(
             ServerCommand command,
             string? name,
@@ -116,13 +117,6 @@ namespace messanger2
             Strings = strings;
             Status = status;
             Mentioned = mentioned;
-        }
-        public Protocol(
-            ServerCommand command,
-            string? name)
-        {
-            Command = command;
-            Name = name;
         }
 
         //public Protocol( // авторизация или отключение

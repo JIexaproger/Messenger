@@ -37,6 +37,11 @@ namespace messanger2
 
         private int id;
 
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        };
+
 
         private bool _debug;
 
@@ -121,7 +126,7 @@ namespace messanger2
                     var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameNotAvailable));
+                        error: Error.NameNotAvailable), options);
 
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
@@ -134,7 +139,7 @@ namespace messanger2
                     var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameTooLong));
+                        error: Error.NameTooLong), options);
 
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
@@ -147,7 +152,7 @@ namespace messanger2
                     var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameTooShort));
+                        error: Error.NameTooShort), options);
 
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
@@ -160,7 +165,7 @@ namespace messanger2
                     var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameIsEmpty));
+                        error: Error.NameIsEmpty), options);
 
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
@@ -170,7 +175,7 @@ namespace messanger2
                 {
                     var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
-                        status: true));
+                        status: true), options);
 
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
@@ -228,7 +233,7 @@ namespace messanger2
                             var mes = JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.SendMessage,
                                 name: clientName,
-                                message: responseProtocol.Message));
+                                message: responseProtocol.Message), options);
 
                             await BoardcastAsync(mes);
 
@@ -249,7 +254,7 @@ namespace messanger2
                             {
                                 var mes = JsonSerializer.Serialize(new Protocol(
                                     ServerCommand.ServerOnline,
-                                    strings: clients.Keys.ToArray()));
+                                    strings: clients.Keys.ToArray()), options);
 
                                 await writer.WriteLineAsync(mes);
 
@@ -276,7 +281,7 @@ namespace messanger2
             var mes = JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.UserJoin,
                                 name: name,
-                                id: clients[name].GetId()));
+                                id: clients[name].GetId()), options);
 
             await BoardcastAsync(mes);
             lock (consoleOutputLocker) { Console.WriteLine(mes); }
@@ -285,7 +290,7 @@ namespace messanger2
         {
             var mes = JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.UserLeave,
-                                name: name));
+                                name: name), options);
 
             await BoardcastAsync(mes);
             lock (consoleOutputLocker) { Console.WriteLine(mes); }
@@ -339,14 +344,14 @@ namespace messanger2
                             await BoardcastAsync(JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.SendMessage,
                                 message,
-                                name)));
+                                name), options));
                         }
                         else // если указаны то только им
                         {
                             await BoardcastAsync(JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.SendMessage,
                                 message,
-                                name)), recipient);
+                                name), options), recipient);
                         }
                     }
                     // если команда: online
