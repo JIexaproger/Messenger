@@ -118,37 +118,49 @@ namespace messanger2
                 // обработка ошибки: имя уже занято
                 if (nameNotAvailable)
                 {
-                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                    var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameNotAvailable)));
+                        error: Error.NameNotAvailable));
+
+                    await writer.WriteLineAsync(mes);
+                    Console.WriteLine(mes);
                     continue;
                 }
                 // обработка ошибки: имя слишком длинное
                 if (protocol.Name.Length > MaxNameLength)
                 {
-                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                    var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameTooLong)));
+                        error: Error.NameTooLong));
+
+                    await writer.WriteLineAsync(mes);
+                    Console.WriteLine(mes);
                     continue;
                 }
                 // обработка ошибки: имя слишком короткое
                 if (protocol.Name.Length < MinNameLength)
                 {
-                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                    var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameTooShort)));
+                        error: Error.NameTooShort));
+
+                    await writer.WriteLineAsync(mes);
+                    Console.WriteLine(mes);
                     continue;
                 }
                 // обработка ошибки: пустое имя
                 if (string.IsNullOrEmpty(protocol.Name))
                 {
-                    await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
+                    var mes = JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
                         status: false,
-                        error: Error.NameIsEmpty)));
+                        error: Error.NameIsEmpty));
+
+                    await writer.WriteLineAsync(mes);
+                    Console.WriteLine(mes);
                     continue;
                 }
 
