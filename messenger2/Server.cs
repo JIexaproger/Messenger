@@ -18,6 +18,8 @@ namespace messanger2
         // статичный локер для исключения гонки за резервирование имени
         private static object registrationLocker = new();
         private static object consoleOutputLocker = new();
+        private static object authorizationLocker = new();
+
 
         private readonly IPAddress _ip;
         private readonly int _port;
@@ -31,6 +33,9 @@ namespace messanger2
 
         // словарь имени клиентов/конфиг клиента
         private Dictionary<string, ClientConfig> clients;
+
+
+        private int id;
 
 
         private bool _debug;
@@ -74,17 +79,23 @@ namespace messanger2
 
 
         // асинхронный метод авторизации клиента
-        private async Task<string> ClientAuthorizationAsync(StreamReader reader, StreamWriter writer)
+        private async Task<string> ClientAuthorizationAsync(TcpClient tcpClient, StreamReader reader, StreamWriter writer)
         {
             // инициализация переменной имени и стандартное значение
-            string userName = "UnregisteredUser";
-            while (_isRunning)
+            Protocol? protocol;
+            while (true)
             {
                 // чтение сообщения клиента
                 string? userInput = await reader.ReadLineAsync();
                 if (string.IsNullOrEmpty(userInput)) continue;
 
-                userName = userInput;
+                lock (consoleOutputLocker) { Console.WriteLine(userInput); }
+
+                protocol = JsonSerializer.Deserialize<Protocol>(userInput);
+                if (protocol is null) continue;
+                if (string.IsNullOrEmpty(protocol.Name)) continue;
+
+                if (protocol.Command != ServerCommand.UserLogin) continue;
 
                 bool nameNotAvailable = false;
 
@@ -93,7 +104,7 @@ namespace messanger2
                 {
                     foreach (var client in clients)
                     {
-                        if (client.Key == userName)
+                        if (client.Key == protocol.Name)
                         {
                             nameNotAvailable = true;
                             break;
@@ -111,7 +122,7 @@ namespace messanger2
                     continue;
                 }
                 // обработка ошибки: имя слишком длинное
-                if (userName.Length > MaxNameLength)
+                if (protocol.Name.Length > MaxNameLength)
                 {
                     await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
@@ -120,7 +131,7 @@ namespace messanger2
                     continue;
                 }
                 // обработка ошибки: имя слишком короткое
-                if (userName.Length < MinNameLength)
+                if (protocol.Name.Length < MinNameLength)
                 {
                     await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
@@ -129,7 +140,7 @@ namespace messanger2
                     continue;
                 }
                 // обработка ошибки: пустое имя
-                if (string.IsNullOrEmpty(userName))
+                if (string.IsNullOrEmpty(protocol.Name))
                 {
                     await writer.WriteLineAsync(JsonSerializer.Serialize(new Protocol(
                         ServerCommand.VerifiedLogin,
@@ -140,7 +151,15 @@ namespace messanger2
 
                 break;
             }
-            return userName;
+
+            lock (authorizationLocker)
+            {
+                // добовление имени в словарь
+                clients.Add(protocol.Name, new ClientConfig(tcpClient, reader, writer, id));
+                id++;
+            }
+
+            return protocol.Name;
         }
 
 
@@ -154,17 +173,18 @@ namespace messanger2
             using (var writer = new StreamWriter(stream) { AutoFlush = true })
             {
                 // получение имени клиента через метод авторизации
-                string clientName = await ClientAuthorizationAsync(reader, writer);
+                string clientName = await ClientAuthorizationAsync(client, reader, writer);
 
-                // добовление имени в словарь
-                clients.Add(clientName, new ClientConfig(client, reader, writer));
 
+                await UserConnect(clientName);
 
                 while (_isRunning)
                 {
                     // чтение сообщения клиента
                     string? response = await reader.ReadLineAsync();
                     if (string.IsNullOrEmpty(response)) continue;
+
+                    lock (consoleOutputLocker) { if (_debug) Console.WriteLine(response); }
 
                     try
                     {
@@ -180,6 +200,7 @@ namespace messanger2
 
                             var mes = JsonSerializer.Serialize(new Protocol(
                                 ServerCommand.SendMessage,
+                                name: clientName,
                                 message: responseProtocol.Message));
 
                             await BoardcastAsync(mes);
@@ -216,12 +237,32 @@ namespace messanger2
                         if (_debug) { Console.WriteLine($"Неправильный JSON формат от \"{clientName}\": {response}\n{ex}"); }
                     }
 
+                    await UserDisconnect(clientName);
 
                 }
 
             }
         }
 
+        private async Task UserConnect(string name)
+        {
+            var mes = JsonSerializer.Serialize(new Protocol(
+                                ServerCommand.UserJoin,
+                                name: name,
+                                id: clients[name].GetId()));
+
+            await BoardcastAsync(mes);
+            lock (consoleOutputLocker) { Console.WriteLine(mes); }
+        }
+        private async Task UserDisconnect(string name)
+        {
+            var mes = JsonSerializer.Serialize(new Protocol(
+                                ServerCommand.UserLeave,
+                                name: name));
+
+            await BoardcastAsync(mes);
+            lock (consoleOutputLocker) { Console.WriteLine(mes); }
+        }
 
         // обработчик ввода в консоль сервера
         private async Task HandleServerConsoleAsync()

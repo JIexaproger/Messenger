@@ -12,10 +12,10 @@ namespace messenger2
         private TcpClient _tcpClient;
         private StreamReader _reader;
         private StreamWriter _writer;
-        private int _roomId;
+        private int _id;
 
 
-        public void SetTcpClient(TcpClient tcpClient)
+        private void SetTcpClient(TcpClient tcpClient)
         {
             _tcpClient = tcpClient;
         }
@@ -25,7 +25,7 @@ namespace messenger2
         }
 
 
-        public void SetWriter(StreamWriter writer)
+        private void SetWriter(StreamWriter writer)
         {
             _writer = writer;
         }
@@ -35,7 +35,7 @@ namespace messenger2
         }
 
 
-        public void SetReader(StreamReader reader)
+        private void SetReader(StreamReader reader)
         {
             _reader = reader;
         }
@@ -45,21 +45,22 @@ namespace messenger2
         }
 
 
-        public void SetRoomId(int roomId)
+        private void SetId(int id)
         {
-            _roomId = roomId;
+            _id = id;
         }
-        public int GetRoomId()
+        public int GetId()
         {
-            return _roomId;
+            return _id;
         }
 
 
-        public ClientConfig(TcpClient tcpClient, StreamReader reader, StreamWriter writer)
+        public ClientConfig(TcpClient tcpClient, StreamReader reader, StreamWriter writer, int id)
         {
             _tcpClient = tcpClient;
             _reader = reader;
             _writer = writer;
+            _id = id;
         }
     }
 }
