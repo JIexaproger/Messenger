@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace messanger2
 {
@@ -66,6 +67,19 @@ namespace messanger2
             using (var writer = new StreamWriter(stream) { AutoFlush = true })
             {
                 await SetupName(reader, writer);
+
+                _ = Task.Run(() => ServerListen(reader));
+                while (true)
+                {
+                    var mes = new Protocol(
+                    ServerCommand.SendMessage,
+                    message: Console.ReadLine());
+
+                    string json = JsonSerializer.Serialize(mes);
+                    Console.WriteLine(json);
+
+                    await writer.WriteLineAsync(json);
+                }
             }
 
 
@@ -128,6 +142,16 @@ namespace messanger2
 
             Console.WriteLine(await reader.ReadLineAsync());
 
+        }
+
+        private async Task ServerListen(StreamReader reader)
+        {
+            while (true)
+            {
+                var response = await reader.ReadLineAsync();
+
+                Console.WriteLine(response.Color(ConsoleRenderer.Color.LightSeaGreen));
+            }
         }
     }
 
