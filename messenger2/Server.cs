@@ -127,6 +127,7 @@ namespace messanger2
                     Console.WriteLine(mes);
                     continue;
                 }
+                else
                 // обработка ошибки: имя слишком длинное
                 if (protocol.Name.Length > MaxNameLength)
                 {
@@ -139,6 +140,7 @@ namespace messanger2
                     Console.WriteLine(mes);
                     continue;
                 }
+                else
                 // обработка ошибки: имя слишком короткое
                 if (protocol.Name.Length < MinNameLength)
                 {
@@ -151,6 +153,7 @@ namespace messanger2
                     Console.WriteLine(mes);
                     continue;
                 }
+                else
                 // обработка ошибки: пустое имя
                 if (string.IsNullOrEmpty(protocol.Name))
                 {
@@ -162,6 +165,15 @@ namespace messanger2
                     await writer.WriteLineAsync(mes);
                     Console.WriteLine(mes);
                     continue;
+                }
+                else
+                {
+                    var mes = JsonSerializer.Serialize(new Protocol(
+                        ServerCommand.VerifiedLogin,
+                        status: true));
+
+                    await writer.WriteLineAsync(mes);
+                    Console.WriteLine(mes);
                 }
 
                 break;
