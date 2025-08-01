@@ -152,10 +152,12 @@ namespace messanger2
         }
         public Protocol( // ошибка авторизаици
             ServerCommand command,
-            Error error)
+            Error error,
+            bool status)
         {
             Command = command;
             Error = error;
+            Status = status;
         }
 
         //public Protocol(string raw)
