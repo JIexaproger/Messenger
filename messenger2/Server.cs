@@ -25,7 +25,7 @@ namespace messanger2
         private readonly int _port;
 
         // запущен ли сервер
-        private bool _isRunning;
+        private bool _isRunning = true;
 
         // ограничения на длинну имён
         public int MaxNameLength = 512;
@@ -57,13 +57,13 @@ namespace messanger2
 
 
         // метод запуска сервера
-        public void CreateServer()
+        public async Task CreateServer()
         {
             TcpListener server = new TcpListener(_ip, _port);
             server.Start();
             Console.WriteLine($"Сервер запущен на порту {_port} ({server.LocalEndpoint})");
             _ = HandleServerConsoleAsync();
-            _ = AcceptClientsAsync(server);
+            await AcceptClientsAsync(server);
         }
 
 

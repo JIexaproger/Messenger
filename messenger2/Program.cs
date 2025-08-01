@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -27,56 +28,57 @@ namespace messanger2
             if (mode == "s")
             {
                 Server server = new Server(ip, port, debug);
-                server.CreateServer();
+                await server.CreateServer();
             }
             else if (mode == "c")
             {
 
             }
-            //while (true)
-            //{
-            //    Console.Clear();
-            //    Console.WriteLine("Вы клиент или сервер?");
-            //    Console.WriteLine("\n1 - сервер\n2 - клиент\n");
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine("Вы клиент или сервер?");
+                Console.WriteLine("\n1 - сервер\n2 - клиент\n");
 
-            //    switch (Console.ReadKey(true).Key)
-            //    {
-            //        case ConsoleKey.D1:
-            //            try
-            //            {
-            //                //Console.Write("Введите доступные IP для подключения к серверу (оставте пустым для любых IP (для публичных чатов)): ");
-            //                //string serverIp = Console.ReadLine();
-            //                //if (serverIp == "" || serverIp == "0") { serverIp = "0.0.0.0"; }
-            //                //Console.Write("Введите порт сервера: ");
-            //                //int serverPort = Convert.ToInt32(Console.ReadLine());
-            //                //await Server.CreateServer(serverIp, serverPort);
-            //                //break;
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                Console.WriteLine("Произошла ошибка: " + ex);
-            //            }
-            //            break;
+                switch (Console.ReadKey(true).Key)
+                {
+                    case ConsoleKey.D1:
+                        try
+                        {
+                            Console.Write("Введите доступные IP для подключения к серверу (оставте пустым для любых IP (для публичных чатов)): ");
+                            string serverIp = Console.ReadLine();
+                            if (serverIp == "" || serverIp == "0") { serverIp = "0.0.0.0"; }
+                            Console.Write("Введите порт сервера: ");
+                            int serverPort = Convert.ToInt32(Console.ReadLine());
+                            Server server = new Server(IPAddress.Parse(serverIp), serverPort);
+                            await server.CreateServer();
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Произошла ошибка: " + ex);
+                        }
+                        break;
 
-            //        case ConsoleKey.D2:
-            //            try
-            //            {
-            //                //Console.Write("Введите IP сервера: ");
-            //                //ip = Console.ReadLine();
-            //                //Console.Write("Введите порт сервера: ");
-            //                //port = Convert.ToInt32(Console.ReadLine());
-            //                //await Client.NewClient(ip, port);
-            //                Client client = new Client("klisov.ru", 8000, true);
-            //                client.StartClient();
-            //                break;
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                Console.WriteLine("Произошла ошибка: " + ex);
-            //            }
-            //            break;
-            //    }
-            //}
+                    case ConsoleKey.D2:
+                        try
+                        {
+                            //Console.Write("Введите IP сервера: ");
+                            //ip = Console.ReadLine();
+                            //Console.Write("Введите порт сервера: ");
+                            //port = Convert.ToInt32(Console.ReadLine());
+                            //await Client.NewClient(ip, port);
+                            Client client = new Client("klisov.ru", 8000, true);
+                            client.StartClient();
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Произошла ошибка: " + ex);
+                        }
+                        break;
+                }
+            }
         }
     }
 }

@@ -47,13 +47,48 @@ namespace messanger2
 
             if (_ip is null || _port == 0)
             {
-                Console.WriteLine($"\n=== Настройка подключения к серверу ===".Color(ConsoleRenderer.Color.LightCyan));
-                Console.Write("Введите IP сервера: ");
-                _ip = Console.ReadLine();
+                SetupConnection();
             }
+
+            ConnectCLient();
+
 
 
             Console.ReadLine();
+        }
+
+        private void SetupConnection()
+        {
+            Console.WriteLine($"\n=== Настройка подключения к серверу ===".Color(ConsoleRenderer.Color.LightCyan));
+            while (true)
+            {
+                Console.Write("Введите IP сервера: ");
+                var ipInput = Console.ReadLine();
+                if (string.IsNullOrEmpty(ipInput))
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    continue;
+                }
+                _ip = ipInput;
+
+                Console.Write("Введите порт сервера: ");
+                try
+                {
+                    var portInput = Convert.ToInt32(Console.ReadLine());
+                    if (portInput <= 0 || portInput > 65535)
+                    {
+                        Console.SetCursorPosition(0, Console.CursorTop - 1);
+                        continue;
+                    }
+                    _port = portInput;
+                }
+                catch (Exception)
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    continue;
+                }
+
+            }
         }
     }
 
