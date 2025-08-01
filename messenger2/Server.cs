@@ -47,12 +47,14 @@ namespace messanger2
             _port = port;
             _debug = debugMode;
             clients = new Dictionary<string, ClientConfig>();
+            _isRunning = true;
         }
         public Server(IPAddress ip, int port)
         {
             _ip = ip;
             _port = port;
             clients = new Dictionary<string, ClientConfig>();
+            _isRunning = true;
         }
 
 
@@ -62,7 +64,7 @@ namespace messanger2
             TcpListener server = new TcpListener(_ip, _port);
             server.Start();
             Console.WriteLine($"Сервер запущен на порту {_port} ({server.LocalEndpoint})");
-            _ = HandleServerConsoleAsync();
+            Task.Run(HandleServerConsoleAsync);
             await AcceptClientsAsync(server);
         }
 
@@ -73,6 +75,7 @@ namespace messanger2
             while (_isRunning)
             {
                 var client = await server.AcceptTcpClientAsync();
+                Console.WriteLine("nashol");
                 _ = HandleClientAsync(client);
             }
         }
@@ -184,7 +187,7 @@ namespace messanger2
                     string? response = await reader.ReadLineAsync();
                     if (string.IsNullOrEmpty(response)) continue;
 
-                    lock (consoleOutputLocker) { if (_debug) Console.WriteLine(response); }
+                    lock (consoleOutputLocker) { Console.WriteLine(response); }
 
                     try
                     {

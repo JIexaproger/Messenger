@@ -68,8 +68,9 @@ namespace messanger2
                             //Console.Write("Введите порт сервера: ");
                             //port = Convert.ToInt32(Console.ReadLine());
                             //await Client.NewClient(ip, port);
-                            Client client = new Client("klisov.ru", 8000, true);
-                            client.StartClient();
+                            //Client client = new Client("klisov.ru", 8000, true);
+                            Client client = new Client();
+                            await client.StartClient();
                             break;
                         }
                         catch (Exception ex)

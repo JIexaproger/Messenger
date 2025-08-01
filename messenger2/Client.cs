@@ -23,7 +23,7 @@ namespace messanger2
         public bool _debug { get; private set; } = false;
 
         // запущен ли клиент
-        private bool _isRunning;
+        private bool _isRunning = true;
 
         public Client(string ip, int port, bool debugMode)
         {
@@ -33,14 +33,22 @@ namespace messanger2
         }
         public Client() { }
 
-        private void ConnectCLient()
+        private async Task<TcpClient> ConnectCLient()
         {
             TcpClient client = new TcpClient();
-            client.ConnectAsync(_ip, _port);
-            Console.WriteLine();
+            try
+            {
+                await client.ConnectAsync(_ip, _port);
+                Console.WriteLine($"Успешно подключен к серверу! ".Color(ConsoleRenderer.Color.Green) + $"{_ip} {_port}".Color(ConsoleRenderer.Color.Orange));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Произошла ошибка подключения: {ex}".Color(ConsoleRenderer.Color.LightRed));
+            }
+            return client;
         }
 
-        public void StartClient()
+        public async Task StartClient()
         {
             Console.Clear();
             Console.WriteLine($"{appClientName.Color(ConsoleRenderer.Color.LightViolet)} ver {appVersion}\n{appVersionDate} by {appAuthor.Color(ConsoleRenderer.Color.LightGreen)}");
@@ -50,7 +58,16 @@ namespace messanger2
                 SetupConnection();
             }
 
-            ConnectCLient();
+            TcpClient client = await ConnectCLient();
+
+            using (client)
+            using (var stream = client.GetStream())
+            using (var reader = new StreamReader(stream))
+            using (var writer = new StreamWriter(stream) { AutoFlush = true })
+            {
+                await SetupName(reader, writer);
+            }
+
 
 
 
@@ -60,13 +77,15 @@ namespace messanger2
         private void SetupConnection()
         {
             Console.WriteLine($"\n=== Настройка подключения к серверу ===".Color(ConsoleRenderer.Color.LightCyan));
+            int x = Console.CursorLeft;
+            int y = Console.CursorTop;
             while (true)
             {
                 Console.Write("Введите IP сервера: ");
                 var ipInput = Console.ReadLine();
                 if (string.IsNullOrEmpty(ipInput))
                 {
-                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    Console.SetCursorPosition(x, y);
                     continue;
                 }
                 _ip = ipInput;
@@ -77,18 +96,38 @@ namespace messanger2
                     var portInput = Convert.ToInt32(Console.ReadLine());
                     if (portInput <= 0 || portInput > 65535)
                     {
-                        Console.SetCursorPosition(0, Console.CursorTop - 1);
+                        Console.SetCursorPosition(x, y);
+
                         continue;
                     }
                     _port = portInput;
                 }
                 catch (Exception)
                 {
-                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    Console.SetCursorPosition(x, y);
                     continue;
                 }
 
+                break;
+
             }
+        }
+
+        private async Task SetupName(StreamReader reader, StreamWriter writer)
+        {
+            Console.Write("Введите имя: ");
+            var name = Console.ReadLine();
+
+            var mes = new Protocol(
+                ServerCommand.UserLogin,
+                name);
+            string json = JsonSerializer.Serialize(mes);
+            Console.WriteLine(json);
+
+            await writer.WriteLineAsync(json);
+
+            Console.WriteLine(await reader.ReadLineAsync());
+
         }
     }
 
