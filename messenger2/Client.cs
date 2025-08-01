@@ -60,26 +60,34 @@ namespace messanger2
             }
 
             TcpClient client = await ConnectCLient();
-
-            using (client)
-            using (var stream = client.GetStream())
-            using (var reader = new StreamReader(stream))
-            using (var writer = new StreamWriter(stream) { AutoFlush = true })
+            try
             {
-                await SetupName(reader, writer);
 
-                _ = Task.Run(() => ServerListen(reader));
-                while (true)
+
+                using (client)
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream))
+                using (var writer = new StreamWriter(stream) { AutoFlush = true })
                 {
-                    var mes = new Protocol(
-                    ServerCommand.SendMessage,
-                    message: Console.ReadLine());
+                    await SetupName(reader, writer);
 
-                    string json = JsonSerializer.Serialize(mes);
-                    Console.WriteLine(json);
+                    _ = Task.Run(() => ServerListen(reader));
+                    while (true)
+                    {
+                        var mes = new Protocol(
+                        ServerCommand.SendMessage,
+                        message: Console.ReadLine());
 
-                    await writer.WriteLineAsync(json);
+                        string json = JsonSerializer.Serialize(mes);
+                        Console.WriteLine(json);
+
+                        await writer.WriteLineAsync(json);
+                    }
                 }
+            }
+            finally
+            {
+                client.Dispose();
             }
 
 

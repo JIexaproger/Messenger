@@ -43,37 +43,37 @@ namespace messanger2
         /// <summary>
         /// Имя
         /// </summary>
-        public string? Name { get; }
+        public string? Name { get; } = null;
 
         /// <summary>
         /// Текст
         /// </summary>
-        public string? Message { get; }
+        public string? Message { get; } = null;
 
         /// <summary>
         /// Id клиента
         /// </summary>
-        public int? Id { get; }
+        public int? Id { get; } = null;
 
         /// <summary>
         /// Лист строк
         /// </summary>
-        public string[]? Strings { get; }
+        public string[]? Strings { get; } = null;
 
         /// <summary>
         /// Тип ошибки от сервера
         /// </summary>
-        public Error Error { get; }
+        public Error Error { get; } = 0;
 
         /// <summary>
         /// Серверное поле в котором отправляется статус принятия сообщения
         /// </summary>
-        public bool? Status { get; }
+        public bool? Status { get; } = null;
 
         /// <summary>
         /// Есть ли в сообщении упоминание
         /// </summary>
-        public bool Mentioned { get; }
+        public bool Mentioned { get; } = false;
 
 
 
