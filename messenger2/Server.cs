@@ -39,7 +39,7 @@ namespace messanger2
 
         JsonSerializerOptions options = new JsonSerializerOptions()
         {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault
         };
 
 
